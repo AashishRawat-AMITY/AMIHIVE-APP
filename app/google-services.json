@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "286885922522",
+    "project_id": "unilink-a04c9",
+    "storage_bucket": "unilink-a04c9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:286885922522:android:ce24262b814d62bb0187e3",
+        "android_client_info": {
+          "package_name": "com.example.amihives"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFbSayB8ys3KVA1Uop0VoVrkIF6TG1_bM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
