@@ -1,100 +1,206 @@
 package com.example.amihives
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @Composable
 fun FeatureScreen(event: Event) {
 
-    val isAdmin = UserSession.isAdmin()
+    var showDialog by remember { mutableStateOf(false) }
+    var enrollment by remember { mutableStateOf("") }
+    var course by remember { mutableStateOf("") }
+    var playerName by remember { mutableStateOf("") }
+
     val db = FirebaseFirestore.getInstance()
-    val auth = FirebaseAuth.getInstance()
+    val userId = UserSession.getUserId()
 
     var isRegistered by remember { mutableStateOf(false) }
-    val userId = auth.currentUser?.uid
+    var isLoading by remember { mutableStateOf(true) }
 
-    // 🔥 CHECK REGISTRATION
-    LaunchedEffect(Unit) {
-        if (userId != null) {
-            db.collection("registrations")
-                .whereEqualTo("userId", userId)
-                .whereEqualTo("eventId", event.id)
-                .get()
-                .addOnSuccessListener {
-                    isRegistered = !it.isEmpty
-                }
-        }
+
+    LaunchedEffect(event.id, userId) {
+
+        if (userId == null) return@LaunchedEffect
+
+        db.collection("registrations")
+            .document("${event.id}_$userId")
+            .get()
+            .addOnSuccessListener {
+                isRegistered = it.exists()
+                isLoading = false
+            }
     }
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+            .fillMaxSize().verticalScroll(rememberScrollState())
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0F172A),
+                        Color(0xFF1E293B),
+                        Color(0xFF334155)
+                    )
+                )
+            )
     ) {
 
-        Column(
+        // IMAGE
+        AsyncImage(
+            model = event.imageUrl,
+            contentDescription = null,
             modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .height(220.dp)
+                .padding(10.dp)
+                .border(
+                    width = 3.dp,
+                    color = Color(0xFFFFD700),
+                    shape = RoundedCornerShape(12.dp)
+                )
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
         ) {
 
-            AsyncImage(
-                model = event.imageUri,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
+            Column(modifier = Modifier.padding(16.dp)) {
 
-            Text(event.title, style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    text = event.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White
+                )
 
-            Text("📅 ${event.date}")
-            Text("📍 ${event.venue}")
-            Text("🏆 ${event.prize}")
+                Spacer(modifier = Modifier.height(10.dp))
 
-            Text("Description:")
-            Text(event.description)
-        }
+                Text(" ${event.date}", color = Color.LightGray)
+                Text(" ${event.venue}", color = Color.LightGray)
 
-        if (!isAdmin) {
+                Spacer(modifier = Modifier.height(12.dp))
 
-            if (isRegistered) {
-                Button(
-                    onClick = {},
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Registered ✅")
-                }
-            } else {
-                Button(
-                    onClick = {
+                Text(event.description, color = Color.White)
 
-                        if (userId == null) return@Button
+                Spacer(modifier = Modifier.height(30.dp))
 
-                        val data = hashMapOf(
-                            "userId" to userId,
-                            "eventId" to event.id,
-                            "eventTitle" to event.title
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else {
+
+
+                    Button(
+                        onClick = {
+                            if (userId == null) return@Button
+                            showDialog = true
+                        },
+                        enabled = !isRegistered,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(55.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isRegistered)
+                                Color.Gray
+                            else
+                                Color(0xFF7C3AED)
                         )
+                    ) {
+                        Text(
+                            if (isRegistered) "Registered " else "Register",
+                            color = Color.White
+                        )
+                    }
+                }
 
-                        db.collection("registrations")
-                            .add(data)
-                            .addOnSuccessListener {
-                                isRegistered = true
+                // DIALOG  HERE
+                if (showDialog) {
+
+                    AlertDialog(
+                        onDismissRequest = { showDialog = false },
+
+                        confirmButton = {
+                            Button(onClick = {
+
+                                if (userId == null) return@Button
+
+                                val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+
+                                val data = hashMapOf(
+                                    "eventId" to event.id,
+                                    "eventTitle" to event.title,
+                                    "userId" to userId,
+                                    "name" to playerName,
+                                    "email" to (user?.email ?: ""),
+                                    "enrollment" to enrollment,
+                                    "course" to course
+                                )
+
+                                db.collection("registrations")
+                                    .document("${event.id}_$userId")
+                                    .set(data)
+                                    .addOnSuccessListener {
+                                        isRegistered = true
+                                        showDialog = false
+                                    }
+
+                            }) {
+                                Text("Submit")
+                                if (playerName.isEmpty() || enrollment.isEmpty() || course.isEmpty()) {
+                                    return@Button
+                                }
                             }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Register")
+                        },
+
+                        dismissButton = {
+                            TextButton(onClick = { showDialog = false }) {
+                                Text("Cancel")
+                            }
+                        },
+
+                        title = { Text("Register") },
+
+                        text = {
+                            Column {
+                                OutlinedTextField(
+                                    value = playerName,
+                                    onValueChange = { playerName = it },
+                                    label = { Text("Player Name / Nickname ") }
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                OutlinedTextField(
+                                    value = enrollment,
+                                    onValueChange = { enrollment = it },
+                                    label = { Text("Enrollment Number") }
+                                )
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                OutlinedTextField(
+                                    value = course,
+                                    onValueChange = { course = it },
+                                    label = { Text("Course") }
+                                )
+                            }
+                        }
+                    )
                 }
             }
         }

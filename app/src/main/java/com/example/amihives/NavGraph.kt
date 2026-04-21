@@ -1,29 +1,59 @@
 package com.example.amihives
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.NavType
+import androidx.compose.runtime.*
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
-import androidx.navigation.navArgument
+import kotlinx.coroutines.delay
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AppNavigation() {
-
     val navController = rememberNavController()
+    AppNavGraph(navController)
+}
 
-    // 🔥 SESSION CHECK
-    val startDestination =
-        if (UserSession.isLoggedIn()) "start" else "login"
+@Composable
+fun AppNavGraph(navController: NavHostController) {
+
+    //   CHECK LOGIN STATE
+    val startDestination = if (UserSession.isLoggedIn()) {
+        "splash"
+    } else {
+        "login"
+    }
 
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
 
-        // 🔐 LOGIN
+
+        composable("categories") {
+            CategoryScreen(
+                onCategoryClick = { category ->
+                    navController.navigate("clubs/$category")
+                }
+            )
+        }
+
+
+        composable("clubs/{category}") { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category") ?: ""
+
+            ClubListScreen(
+                category = category,
+                onClubClick = { club ->
+                    navController.navigate("club_detail/${club.id}")
+                },
+                onEditClick = { } // keep as is
+            )
+        }
+
+        //  LOGIN
         composable("login") {
             LoginScreen(
                 onLoginClick = {
-                    navController.navigate("start") {
+                    navController.navigate("splash") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
@@ -33,11 +63,11 @@ fun AppNavigation() {
             )
         }
 
-        // 📝 SIGNUP
+        //  SIGNUP
         composable("signup") {
             SignupScreen(
                 onSignupDone = {
-                    navController.navigate("signup_success") {
+                    navController.navigate("splash") {
                         popUpTo("signup") { inclusive = true }
                     }
                 },
@@ -46,32 +76,54 @@ fun AppNavigation() {
                 }
             )
         }
+        composable("create_club") {
+            CreateClubScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        //  SPLASH
+        composable("splash") {
 
-        // 🎉 SIGNUP SUCCESS SCREEN
-        composable("signup_success") {
-            SignupSuccessScreen(
-                onLoginClick = {
-                    navController.navigate("login") {
-                        popUpTo("signup_success") { inclusive = true }
+            SplashScreen()
+
+            LaunchedEffect(Unit) {
+                delay(2000)
+
+                navController.navigate("start") {
+                    popUpTo("splash") { inclusive = true }
+                }
+            }
+        }
+
+        //  START SCREEN
+        composable("start") {
+            StartScreen(
+                onExploreClick = {
+                    navController.navigate("dashboard") {
+                        popUpTo("start") { inclusive = true }
                     }
                 }
             )
         }
 
-        // 🚀 START SCREEN
-        composable("start") {
-            StartScreen(
-                onExploreClick = {
-                    navController.navigate("dashboard")
-                }
-            )
+
+        composable("club_detail/{clubId}") { backStack ->
+            val clubId = backStack.arguments?.getString("clubId") ?: ""
+            ClubDetailWrapper(clubId, navController)
         }
 
-        // 📊 DASHBOARD
+        composable("club_events/{clubId}") { backStack ->
+            val clubId = backStack.arguments?.getString("clubId") ?: ""
+            ClubEventsScreen(clubId)
+        }
+
+        // DASHBOARD
         composable("dashboard") {
             DashboardScreen(
-                onEventClick = { index ->
-                    navController.navigate("feature/$index")
+                onEventClick = { id ->
+                    navController.navigate("feature/$id")
                 },
                 onProfileClick = {
                     navController.navigate("profile")
@@ -79,69 +131,75 @@ fun AppNavigation() {
                 onCreateEventClick = {
                     navController.navigate("create_event")
                 },
-                onEditEventClick = { index ->
-                    navController.navigate("create_event?index=$index")
+                onCreateClubClick = {
+                    navController.navigate("create_club")
+                },
+                onExploreClubsClick = {
+                    navController.navigate("categories")
                 }
             )
         }
 
-        // ➕ CREATE / EDIT EVENT
-        composable(
-            route = "create_event?index={index}",
-            arguments = listOf(
-                navArgument("index") {
-                    nullable = true
-                }
-            )
-        ) { backStackEntry ->
+        // EVENT DETAIL
+        composable("feature/{eventId}") { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId")
+            val event = EventStorage.events.find { it.id == eventId }
 
-            val index =
-                backStackEntry.arguments?.getString("index")?.toIntOrNull()
-
-            CreateEventScreen(
-                eventIndex = index,
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        // 📄 FEATURE SCREEN
-        composable(
-            route = "feature/{index}",
-            arguments = listOf(
-                navArgument("index") {
-                    type = NavType.IntType
-                }
-            )
-        ) { backStackEntry ->
-
-            val index =
-                backStackEntry.arguments?.getInt("index") ?: 0
-
-            val event = EventStorage.events.getOrNull(index)
-
-            if (event != null) {
-                FeatureScreen(event)
+            event?.let {
+                FeatureScreen(event = it)
             }
         }
 
-        // 👤 PROFILE
+        //  CREATE EVENT
+        composable("create_event") {
+            CreateEventScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // this is for registered user
+        composable("registered_users/{eventId}") { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+            RegisteredUsersScreen(eventId)
+        }
+
+        //  this is all registration in admin profile
+        composable("all_registrations") {
+            AllRegistrationsScreen()
+        }
+        //  PROFILE
         composable("profile") {
             ProfileScreen(
+
                 onBackClick = {
                     navController.popBackStack()
                 },
+
                 onLogoutClick = {
-
-                    // 🔥 IMPORTANT
                     UserSession.logout()
-
                     navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo("dashboard") { inclusive = true }
                     }
+                },
+
+                onCertificatesClick = { role ->
+                    if (role == "admin") {
+                        navController.navigate("cert_post")
+                    } else {
+                        navController.navigate("cert_view")
+                    }
+                },onViewRegistrationsClick = {
+                    navController.navigate("all_registrations")
                 }
+
             )
+        }
+        composable(route = "cert_post") {
+            CertPostScreen()
+        }
+
+        composable(route = "cert_view") {
+            CertViewScreen()
         }
     }
 }

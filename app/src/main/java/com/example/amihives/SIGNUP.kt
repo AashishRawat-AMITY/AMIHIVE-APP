@@ -9,6 +9,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+
 
 @Composable
 fun SignupScreen(
@@ -29,11 +32,24 @@ fun SignupScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background( //  DARK GRADIENT
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF020617),
+                        Color(0xFF0F172A),
+                        Color(0xFF1E3A8A)
+                    )
+                )
+            )
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
 
-        Text("Sign Up", fontSize = 28.sp)
+        Text(
+            "Sign Up",
+            fontSize = 28.sp,
+            color = Color(0xFFFFD700) // GOLD TITLE
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -42,7 +58,14 @@ fun SignupScreen(
             onValueChange = { name = it },
             label = { Text("Name") },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFFFFD700),
+                unfocusedBorderColor = Color(0xFFFFD700),
+                focusedLabelColor = Color(0xFFFFD700),
+                cursorColor = Color(0xFFFFD700),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -52,7 +75,14 @@ fun SignupScreen(
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFFFFD700),
+                unfocusedBorderColor = Color(0xFFFFD700),
+                focusedLabelColor = Color(0xFFFFD700),
+                cursorColor = Color(0xFFFFD700),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -62,7 +92,14 @@ fun SignupScreen(
             onValueChange = { password = it },
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFFFFD700),
+                unfocusedBorderColor = Color(0xFFFFD700),
+                focusedLabelColor = Color(0xFFFFD700),
+                cursorColor = Color(0xFFFFD700),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -88,45 +125,34 @@ fun SignupScreen(
                             val user = hashMapOf(
                                 "name" to name,
                                 "email" to email,
-                                "role" to "user"   // 🔥 default role
+                                "role" to "user"
                             )
 
                             db.collection("users")
                                 .document(uid)
                                 .set(user)
                                 .addOnSuccessListener {
-
                                     isLoading = false
-                                    message = "Account Created 🎉"
                                     onSignupDone()
                                 }
                                 .addOnFailureListener {
                                     isLoading = false
-                                    message = "Failed to save user ❌"
+                                    message = "Failed to save user "
                                 }
-
-                        } else {
-                            isLoading = false
-                            message = "User error ❌"
                         }
                     }
                     .addOnFailureListener {
                         isLoading = false
-                        message = it.message ?: "Signup Failed ❌"
+                        message = it.message ?: "Signup Failed "
                     }
 
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF7C3AED)
+            )
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text("Create Account")
-            }
+            Text("Create Account")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -134,14 +160,17 @@ fun SignupScreen(
         if (message.isNotEmpty()) {
             Text(
                 text = message,
-                color = if (message.contains("🎉")) Color(0xFF4CAF50) else Color.Red
+                color = Color.Red
             )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
         TextButton(onClick = onBackToLogin) {
-            Text("Back to Login")
+            Text(
+                "Back to Login",
+                color = Color.White
+            )
         }
     }
 }

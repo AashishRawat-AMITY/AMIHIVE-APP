@@ -1,190 +1,221 @@
 package com.example.amihives
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import coil.compose.AsyncImage
 
 @Composable
 fun DashboardScreen(
-    onEventClick: (Int) -> Unit,
+    onEventClick: (String) -> Unit,
     onProfileClick: () -> Unit,
     onCreateEventClick: () -> Unit,
-    onEditEventClick: (Int) -> Unit
+    onCreateClubClick: () -> Unit,
+    onExploreClubsClick: () -> Unit
 ) {
 
-    var searchQuery by remember { mutableStateOf("") }
-
     val events = EventStorage.events
+    val role = UserSession.getUserRole()
 
-    // 🔥 LOAD EVENTS FROM FIREBASE
-    LaunchedEffect(Unit) {
-        EventStorage.listenToEvents()
-    }
+    var searchQuery by remember { mutableStateOf("") }
 
     val filteredEvents = events.filter {
         it.title.contains(searchQuery, ignoreCase = true)
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F2F5))
-    ) {
-
-        // 🔷 HEADER
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .background(Color(0xFF6200EE))
-        ) {
-
-            Text(
-                text = "College Club Updates",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF020617),
+                        Color(0xFF0F172A),
+                        Color(0xFF1E3A8A)
+                    )
+                )
             )
-
-            // 👤 PROFILE ICON
-            IconButton(
-                onClick = onProfileClick,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 28.dp, end = 12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profile",
-                    tint = Color.White
-                )
-            }
-        }
-
-        // 🔍 SEARCH
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Search events...") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        )
-
-        // ➕ CREATE EVENT (ADMIN ONLY)
-        if (UserSession.isAdmin()) {
-            Button(
-                onClick = onCreateEventClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Create Event")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // 📋 EVENT LIST
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp)
-        ) {
-
-            items(filteredEvents) { event ->
-
-                EventCard(
-                    event = event,
-                    isAdmin = UserSession.isAdmin(),
-
-                    onClick = {
-                        val index = EventStorage.events.indexOf(event)
-                        onEventClick(index)
-                    },
-
-                    onEditClick = {
-                        val index = EventStorage.events.indexOf(event)
-                        onEditEventClick(index)
-                    },
-
-                    onDeleteClick = {
-                        EventStorage.deleteEvent(event)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EventCard(
-    event: Event,
-    isAdmin: Boolean,
-    onClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF6200EE))
     ) {
 
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
 
-            Text(
-                text = event.title,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+            //  LOWER HEADER (THIS FIXES YOUR ISSUE)
+            Spacer(modifier = Modifier.height(20.dp))
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
 
-            Text(
-                text = "Date: ${event.date}",
-                color = Color.White.copy(alpha = 0.8f)
-            )
+                Text(
+                    "Dashboard",
+                    color = Color.White,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-            Text(
-                text = "Venue: ${event.venue}",
-                color = Color.White.copy(alpha = 0.8f)
-            )
+                Text(
+                    "Profile",
+                    color = Color(0xFF22D3EE),
+                    modifier = Modifier.clickable { onProfileClick() }
+                )
+            }
 
-            // 🔥 ADMIN CONTROLS
-            if (isAdmin) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // SHOW ONLY FOR USER
+            if (role != "admin") {
+                Button(
+                    onClick = onExploreClubsClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF7C3AED)
+                    )
+                ) {
+                    Text("Explore Clubs")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            //  ADMIN CONTROLS (UNCHANGED)
+            if (role == "admin") {
+
+                Button(
+                    onClick = onCreateEventClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF22D3EE)
+                    )
+                ) {
+                    Text("Create Event")
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row {
+                Button(
+                    onClick = onCreateClubClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF38BDF8)
+                    )
+                ) {
+                    Text("Create Club")
+                }
 
-                    TextButton(onClick = onEditClick) {
-                        Text("Edit", color = Color.White)
-                    }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+            // SEARCH
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = {
+                    Text("Search events...", color = Color.Gray)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White,
+                    focusedBorderColor = Color(0xFF22D3EE),
+                    unfocusedBorderColor = Color.Gray
+                )
+            )
 
-                    TextButton(onClick = onDeleteClick) {
-                        Text("Delete", color = Color.White)
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            //  LIST
+            LazyColumn {
+
+                items(filteredEvents) { event ->
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .clickable { onEventClick(event.id) } // (added back safely)
+                            .border(
+                                1.dp,
+                                Color.White.copy(0.2f),
+                                RoundedCornerShape(16.dp)
+                            ),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF1E293B)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+
+                        Box {
+
+                            Column {
+
+                                if (event.imageUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = event.imageUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+
+                                Column(modifier = Modifier.padding(16.dp)) {
+
+                                    Text(
+                                        event.title,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    Text("  ${event.date}", color = Color.LightGray)
+                                    Text("  ${event.venue}", color = Color.LightGray)
+                                }
+                            }
+
+                            if (role == "admin") {
+
+                                Text(
+                                    text = "✏️",
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(10.dp)
+                                )
+
+                                Text(
+                                    text = "❌",
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(10.dp)
+                                        .clickable {
+                                            EventStorage.deleteEvent(event.id)
+                                        }
+                                )
+                            }
+                        }
                     }
                 }
             }
+
         }
     }
 }

@@ -2,54 +2,87 @@ package com.example.amihives
 
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.firestore.FirebaseFirestore
+import android.R.attr.category
 
 object EventStorage {
 
     val events = mutableStateListOf<Event>()
     private val db = FirebaseFirestore.getInstance()
 
-    // 🔥 REAL-TIME LISTENER
+
     fun listenToEvents() {
         db.collection("events")
-            .addSnapshotListener { result, error ->
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
 
-                if (error != null) return@addSnapshotListener
+                    events.clear()
 
-                events.clear()
-
-                result?.forEach { doc ->
-                    val event = doc.toObject(Event::class.java)
-                    event.id = doc.id   // 🔥 CRITICAL FIX
-                    events.add(event)
+                    for (doc in snapshot.documents) {
+                        events.add(
+                            Event(
+                                id = doc.id,
+                                title = doc.getString("title") ?: "",
+                                description = doc.getString("description") ?: "",
+                                date = doc.getString("date") ?: "",
+                                venue = doc.getString("venue") ?: "",
+                                imageUrl = doc.getString("imageUrl") ?: ""
+                            )
+                        )
+                    }
                 }
             }
     }
 
-    // 🔥 ADD
-    fun addEvent(event: Event) {
-        db.collection("events").add(event)
+    //  ADD EVENT
+    fun addEvent(
+        title: String,
+        desc: String,
+        date: String,
+        venue: String,
+        imageUrl: String,
+        categoty: String
+
+    ) {
+        val data = hashMapOf(
+            "title" to title,
+            "description" to desc,
+            "date" to date,
+            "venue" to venue,
+            "imageUrl" to imageUrl,
+            "category" to category
+        )
+
+        FirebaseFirestore.getInstance()
+            .collection("events")
+            .add(data)
     }
 
-    // 🔥 UPDATE (FIXED)
-    fun updateEvent(event: Event) {
+    // ️ UPDATE EVENT
+    fun updateEvent(
+        id: String,
+        title: String,
+        desc: String,
+        date: String,
+        venue: String,
+        imageUrl: String,
+        category: String
+    ) {
+        val data = hashMapOf(
+            "title" to title,
+            "description" to desc,
+            "date" to date,
+            "venue" to venue,
+            "imageUrl" to imageUrl,
+            "category" to category
+        )
 
-        if (event.id.isEmpty()) {
-            println("❌ Update failed: ID empty")
-            return
-        }
-
-        db.collection("events")
-            .document(event.id)
-            .set(event)
-            .addOnSuccessListener {
-                println("✅ Updated")
-            }
+        FirebaseFirestore.getInstance()
+            .collection("events")
+            .document(id)
+            .update(data as Map<String, Any>)
     }
 
-    // 🔥 DELETE
-    fun deleteEvent(event: Event) {
-        if (event.id.isNotEmpty()) {
-            db.collection("events").document(event.id).delete()
-        }
+    fun deleteEvent(id: String) {
+        db.collection("events").document(id).delete()
     }
 }

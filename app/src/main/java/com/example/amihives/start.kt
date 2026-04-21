@@ -26,53 +26,57 @@ fun StartScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color.White,
-                        Color(0xFFEDE7F6)
+                        Color(0xFF020617), // top (almost black)
+                        Color(0xFF0F172A), // middle (dark navy)
+                        Color(0xFF1E3A8A)  // bottom (blue)
                     )
                 )
             )
     ) {
 
+        //  FULL WIDTH IMAGE (NO SIDE GAP)
+        Image(
+            painter = painterResource(id = R.drawable.logo1_0),
+            contentDescription = "AMIHIVE Logo",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier
+                .fillMaxWidth()     // edge-to-edge
+                .align(Alignment.Center)
+        )
+
+        // BOTTOM CONTENT
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Bottom
         ) {
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // 🔥 BIG LOGO
-            Image(
-                painter = painterResource(id = R.drawable.applogo2),
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .fillMaxHeight(0.5f)
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Fit
-            )
-
-            // 🔥 TAGLINE
+            // TAGLINE
             Text(
                 text = "Linked: Stay in the Loop.",
-                fontSize = 25.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color.DarkGray,
-                modifier = Modifier.padding(vertical = 10.dp)
+                color = Color(0xFFE2E8F0),
+                modifier = Modifier.padding(bottom = 20.dp)
             )
 
-            // 🔥 EXPLORE BUTTON
+            // BUTTON
             Button(
                 onClick = { onExploreClick() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF22D3EE) // cyan match
+                )
             ) {
                 Text(
                     text = "Explore",
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = Color.Black
                 )
             }
         }

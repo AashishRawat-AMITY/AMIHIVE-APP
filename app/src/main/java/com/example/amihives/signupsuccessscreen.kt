@@ -21,7 +21,7 @@ fun SignupSuccessScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Text("Welcome to UniLink ", fontSize = 26.sp)
+        Text("Welcome to Amihive", fontSize = 26.sp)
 
         Spacer(modifier = Modifier.height(12.dp))
 

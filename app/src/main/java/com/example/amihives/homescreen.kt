@@ -16,14 +16,14 @@ fun HomeScreen(
 
     val events = EventStorage.events
 
-    // 🔥 LOAD EVENTS FROM FIREBASE (REAL-TIME)
+
     LaunchedEffect(Unit) {
         EventStorage.listenToEvents()
     }
 
     Scaffold(
         topBar = {
-            // ✅ SIMPLE TOP BAR (NO VERSION ISSUE)
+
             Text(
                 text = "Events",
                 style = MaterialTheme.typography.titleLarge,
@@ -57,8 +57,8 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        Text("📅 ${event.date}")
-                        Text("📍 ${event.venue}")
+                        Text(" ${event.date}")
+                        Text(" ${event.venue}")
                     }
                 }
             }
